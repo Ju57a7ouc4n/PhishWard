@@ -1,0 +1,11 @@
+# Maven build directory
+target/
+
+# Eclipse IDE files
+.settings/
+.project
+.classpath
+
+# SQLite local database (evita subir tu base de datos de pruebas)
+*.db
+*.sqlite
