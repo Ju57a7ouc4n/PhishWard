@@ -1,6 +1,6 @@
 # PhishWard 🛡️ - Threat Analysis Engine
 
-Developed by **Augusto Sulsente (ju57a7ouc4n)**.
+Developed by **ju57a7ouc4n**.
 
 PhishWard is a proactive, open-source cybersecurity tool designed to provide real-time intelligence on suspicious URLs. Built on the philosophy that **security tools must be free, auditable, and transparent**, PhishWard empowers users to analyze threats without becoming the product themselves.
 
