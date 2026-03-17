@@ -1,0 +1,8 @@
+com.ju57a7ouc4n.phishlab
+com.ju57a7ouc4n.phishlab.controller
+com.ju57a7ouc4n.phishlab.engine
+com.ju57a7ouc4n.phishlab.model.dao
+com.ju57a7ouc4n.phishlab.model.entities
+com.ju57a7ouc4n.phishlab.model.events
+com.ju57a7ouc4n.phishlab.model.network
+com.ju57a7ouc4n.phishlab.view
