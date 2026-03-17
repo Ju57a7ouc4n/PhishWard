@@ -18,7 +18,6 @@
 
 package com.ju57a7ouc4n.phishlab.model.network;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -26,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.ju57a7ouc4n.phishlab.model.entities.UrlTarget;
+import com.ju57a7ouc4n.phishlab.model.events.AnalysisProgressListener;
 import com.ju57a7ouc4n.phishlab.model.events.ErrorListener;
 import com.ju57a7ouc4n.phishlab.model.events.UserHandledError;
 
@@ -38,6 +38,7 @@ public class PhishTankClient {
 	private static final String API_URL = "https://checkurl.phishtank.com/checkurl/";
     private final OkHttpClient client;
     private List<ErrorListener> listeners;
+	private AnalysisProgressListener progressListener;
 
     public PhishTankClient() {
         this.listeners = new ArrayList<>();
@@ -47,30 +48,40 @@ public class PhishTankClient {
             .build();
     }
     
-    public boolean isPhishing(UrlTarget target) {
-        RequestBody formBody = new FormBody.Builder()
-            .add("url", target.getRawUrl())
-            .add("format", "json")
-            .build();
-        Request request = new Request.Builder()
-            .url(API_URL)
-            .post(formBody)
-            .build();
-        try (Response response = client.newCall(request).execute()) {
-            if (!response.isSuccessful()) {
-                throw new IOException("Código HTTP de error: " + response.code());
-            }
-            String responseData = response.body().string();
-            JsonObject jsonObject = JsonParser.parseString(responseData).getAsJsonObject();
-            if (jsonObject.has("results")) {
-                JsonObject results = jsonObject.getAsJsonObject("results");
-                return results.get("valid").getAsBoolean();
-            }
-            return false;
-        } catch (Exception e) {
-            this.notifyError("OSINT Fail", "PhishTank Consulting Error: " + target.getDomain(), e);
-            return false; 
-        }
+    public boolean isPhishing(UrlTarget target, String apiKey) {
+    	if (apiKey != null && !apiKey.isEmpty()) {
+    		notifyProgress("[+] Setting PhishTank API Key to: " + apiKey + "\n");
+    		FormBody.Builder formBuilder = new FormBody.Builder()
+                	.add("url", target.getRawUrl())
+                	.add("format", "json");
+                	formBuilder.add("app_key", apiKey);
+                RequestBody formBody = formBuilder.build();
+            	Request request = new Request.Builder()
+            		.url(API_URL)
+                	.post(formBody)
+                	.header("User-Agent", "PhishWard-Security-Tool/1.0") 
+                	.build();
+            try (Response response = client.newCall(request).execute()) {
+            	if (!response.isSuccessful()) {
+                	notifyProgress("[-] PhishTank API unavailable or rate-limited (HTTP " + response.code() + ") \n");
+                	return false; 
+            	}
+            	String responseData = response.body().string();
+            	JsonObject jsonObject = JsonParser.parseString(responseData).getAsJsonObject();
+            	if (jsonObject.has("results")) {
+                	JsonObject results = jsonObject.getAsJsonObject("results");
+                	if (results.has("in_database") && results.get("in_database").getAsBoolean()) {
+                    	return results.has("valid") && results.get("valid").getAsBoolean();
+                	}
+            	}
+            	return false;
+        	} catch (Exception e) {
+            	notifyProgress("[-] PhishTank connection dropped: " + e.getMessage() + "\n");
+            	return false; 
+        	}
+    	}
+    	notifyProgress("[-] PhishTank API Key Not Specified: Skipping. \n");
+		return false;
     }
     
     public void addErrorListener(ErrorListener listener) {
@@ -82,5 +93,15 @@ public class PhishTankClient {
         for (ErrorListener listener : this.listeners) {
             listener.anErrorOcurred(error);
         }
+    }
+    
+    private void notifyProgress(String message) {
+    	if (this.progressListener != null) {
+            this.progressListener.onProgressUpdate(message);
+        }
+    }
+    
+    public void setProgressListener(AnalysisProgressListener e) {
+        this.progressListener = e;
     }
 }

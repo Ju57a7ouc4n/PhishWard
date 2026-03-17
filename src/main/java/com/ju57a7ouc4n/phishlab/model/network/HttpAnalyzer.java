@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import com.ju57a7ouc4n.phishlab.model.entities.UrlTarget;
+import com.ju57a7ouc4n.phishlab.model.events.AnalysisProgressListener;
 import com.ju57a7ouc4n.phishlab.model.events.ErrorListener;
 import com.ju57a7ouc4n.phishlab.model.events.UserHandledError;
 
@@ -47,6 +48,8 @@ import okhttp3.Response;
 public class HttpAnalyzer {
 	private final OkHttpClient client;
 	private ArrayList<ErrorListener> listeners;
+	private AnalysisProgressListener progressListener;
+
 	
 	public HttpAnalyzer() {
 		this.client = new OkHttpClient().newBuilder()
@@ -69,22 +72,29 @@ public class HttpAnalyzer {
 	}
 	
 	public Map<String, String> fetchHeaders(UrlTarget target) {
-	    Map<String, String> headerMap = new HashMap<>();
-	    Request request = new Request.Builder()
-	        .url(target.getRawUrl())
-	        .head()
-	        .build();
-	    try (Response response = client.newCall(request).execute()) {
-	        Headers responseHeaders = response.headers();
-	        for (String name : responseHeaders.names()) {
-	            headerMap.put(name, responseHeaders.get(name));
-	        }
-	        headerMap.put("HTTP-Status-Code", String.valueOf(response.code()));
-	    } catch (IOException e) {
-	        this.notifyError("Connection", "Cannnot Obtain Headers From: " + target.getRawUrl(), e);
-	    }
-	    return headerMap;
-	}
+		notifyProgress("[+] Fetching Headers... \n");
+        Map<String, String> headerMap = new HashMap<>();
+        String url = target.getRawUrl();
+        if (!url.toLowerCase().startsWith("http://") && !url.toLowerCase().startsWith("https://")) {
+            url = "http://" + url; 
+        }
+        Request request = new Request.Builder()
+            .url(url)
+            .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+            .build(); 
+        try (Response response = client.newCall(request).execute()) {
+            Headers responseHeaders = response.headers();
+            for (String name : responseHeaders.names()) {
+                headerMap.put(name, responseHeaders.get(name));
+            }
+            headerMap.put("HTTP-Status-Code", String.valueOf(response.code()));
+        } catch (IllegalArgumentException e) {
+            notifyProgress("[!] OkHttp parse error for URL: " + url + "\n");
+        } catch (IOException e) {
+            notifyProgress("[-] Target offline or connection dropped: " + e.getMessage() + "\n");
+        }      
+        return headerMap;
+    }
 	
 	public void addErrorListener(ErrorListener listener) {
 	    this.listeners.add(listener);
@@ -96,4 +106,14 @@ public class HttpAnalyzer {
 	        listener.anErrorOcurred(error); 
 	    }
 	}
+	
+    private void notifyProgress(String message) {
+    	if (this.progressListener != null) {
+            this.progressListener.onProgressUpdate(message);
+        }
+    }
+    
+    public void setProgressListener(AnalysisProgressListener e) {
+        this.progressListener = e;
+    }
 }

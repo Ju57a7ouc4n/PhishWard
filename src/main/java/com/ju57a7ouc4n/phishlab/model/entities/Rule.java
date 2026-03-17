@@ -61,6 +61,14 @@ public class Rule {
 		this.timestamp = System.currentTimeMillis();
 	}
 	
+	public Rule(String indicator, RuleType listType) {
+		super();
+		this.indicator = indicator;
+		this.listType = listType;
+		this.reason = "Secure Domain";
+		this.timestamp = System.currentTimeMillis();
+	}
+	
 	public int getId() {
 		return id;
 	}
