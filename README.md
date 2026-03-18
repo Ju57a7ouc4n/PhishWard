@@ -16,7 +16,8 @@ In an era of "security-as-a-service" where tools secretly sell user telemetry, P
 The engine follows a rigorous multi-stage workflow to determine a **Threat Score (0-100)**:
 
 1.  **Local Intelligence:** Checks a local SQLite database for user-defined Whitelists or Blacklists.
-2.  **Network Reconnaissance:** * Resolves the target IP address.
+2.  **Network Reconnaissance:** 
+    * Resolves the target IP address.
     * Analyzes HTTP Security Headers (HSTS, CSP, X-Frame-Options, X-Content-Type).
     * Detects suspicious session or tracking cookies.
 3.  **Global OSINT:** Queries the PhishTank API to cross-reference known malicious campaigns.
